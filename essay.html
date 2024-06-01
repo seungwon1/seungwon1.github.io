@@ -15,51 +15,179 @@
       margin: 0 auto;
       padding: 20px;
     }
-    .login-form {
+    .post-form {
       margin-bottom: 20px;
+      display: none;
+    }
+    .post {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .post-title {
+      font-weight: bold;
+    }
+    .post-content {
+      margin: 10px 0;
+    }
+    .post-actions {
+      text-align: right;
+    }
+    .comments-section {
+      margin-top: 20px;
+    }
+    .comment {
+      border-top: 1px solid #ddd;
+      padding: 10px 0;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Essays</h1>
     <div id="loginContainer">
-      <h2>Login</h2>
-      <form id="loginForm" class="login-form">
-        <label for="username">Username:</label>
-        <input type="text" id="username" required>
-        <br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" required>
-        <br>
-        <button type="submit">Login</button>
-      </form>
+      <label for="password">Enter Password:</label>
+      <input type="password" id="password">
+      <button onclick="login()">Submit</button>
     </div>
+    <form id="postForm" class="post-form">
+      <input type="hidden" id="postId">
+      <label for="postTitle">Title:</label>
+      <input type="text" id="postTitle" required>
+      <br>
+      <label for="postContent">Content:</label>
+      <textarea id="postContent" required></textarea>
+      <br>
+      <button type="submit">Save Post</button>
+    </form>
     <div id="postsContainer"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    const correctHash = '40b49036d9aca125612352dbc0ff8a62fba8e27a348a5fd5d50ff7eb8422a35e'; // Replace this with your hashed password
+
+    function login() {
+      const passwordInput = document.getElementById('password').value;
+      const hash = CryptoJS.SHA256(passwordInput).toString();
+      if (hash === correctHash) {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('postForm').style.display = 'block';
+      } else {
+        alert('Incorrect password');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-      const loginForm = document.getElementById('loginForm');
+      const postForm = document.getElementById('postForm');
+      const postIdField = document.getElementById('postId');
+      const postTitleField = document.getElementById('postTitle');
+      const postContentField = document.getElementById('postContent');
+      const postsContainer = document.getElementById('postsContainer');
 
-      loginForm.addEventListener('submit', async function (e) {
+      postForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        const postId = postIdField.value;
+        const postTitle = postTitleField.value;
+        const postContent = postContentField.value;
 
-        try {
-          const response = await axios.post('http://localhost:3000/users/login', { username, password });
-          const token = response.data.token;
-          // Store the token in local storage or session storage for future requests
-          localStorage.setItem('token', token);
-          // Redirect to the main page or reload the page to fetch posts
-          window.location.href = 'essay.html';
-        } catch (error) {
-          console.error('Login failed:', error.response.data);
-          alert('Login failed. Please check your credentials.');
+        if (postId) {
+          updatePost(postId, postTitle, postContent);
+        } else {
+          savePost(postTitle, postContent);
         }
+
+        postForm.reset();
+        postIdField.value = '';
       });
+
+      function savePost(title, content) {
+        const posts = getPosts();
+        const postId = new Date().getTime().toString();
+        posts.push({ id: postId, title: title, content: content, comments: [] });
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function updatePost(id, title, content) {
+        const posts = getPosts();
+        const postIndex = posts.findIndex(post => post.id === id);
+        posts[postIndex].title = title;
+        posts[postIndex].content = content;
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function deletePost(id) {
+        let posts = getPosts();
+        posts = posts.filter(post => post.id !== id);
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function editPost(id) {
+        const posts = getPosts();
+        const post = posts.find(post => post.id === id);
+        postIdField.value = post.id;
+        postTitleField.value = post.title;
+        postContentField.value = post.content;
+      }
+
+      function addComment(postId, comment) {
+        const posts = getPosts();
+        const post = posts.find(post => post.id === postId);
+        post.comments.push(comment);
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function getPosts() {
+        return JSON.parse(localStorage.getItem('posts')) || [];
+      }
+
+      function renderPosts() {
+        const posts = getPosts();
+        postsContainer.innerHTML = '';
+        posts.forEach(post => {
+          const postElement = document.createElement('div');
+          postElement.className = 'post';
+          postElement.innerHTML = `
+            <div class="post-title">${post.title}</div>
+            <div class="post-content">${post.content}</div>
+            <div class="post-actions">
+              <button onclick="editPost('${post.id}')">Edit</button>
+              <button onclick="deletePost('${post.id}')">Delete</button>
+            </div>
+            <div class="comments-section">
+              <h3>Comments</h3>
+              <div id="comments-${post.id}">
+                ${post.comments.map(comment => `<div class="comment">${comment}</div>`).join('')}
+              </div>
+              <input type="text" id="comment-${post.id}" placeholder="Add a comment">
+              <button onclick="addCommentToPost('${post.id}')">Post Comment</button>
+            </div>
+          `;
+          postsContainer.appendChild(postElement);
+        });
+      }
+
+      window.addCommentToPost = function(postId) {
+        const commentInput = document.getElementById(`comment-${postId}`);
+        const comment = commentInput.value;
+        if (comment) {
+          addComment(postId, comment);
+          commentInput.value = '';
+        } else {
+          alert('Comment cannot be empty');
+        }
+      };
+
+      // Initial render
+      renderPosts();
+
+      // Expose functions to global scope
+      window.editPost = editPost;
+      window.deletePost = deletePost;
     });
   </script>
 </body>

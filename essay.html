@@ -17,7 +17,6 @@
     }
     .post-form {
       margin-bottom: 20px;
-      display: none;
     }
     .post {
       border: 1px solid #ddd;
@@ -33,23 +32,11 @@
     .post-actions {
       text-align: right;
     }
-    .comments-section {
-      margin-top: 20px;
-    }
-    .comment {
-      border-top: 1px solid #ddd;
-      padding: 10px 0;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Essays</h1>
-    <div id="loginContainer">
-      <label for="password">Enter Password:</label>
-      <input type="password" id="password">
-      <button onclick="login()">Submit</button>
-    </div>
     <form id="postForm" class="post-form">
       <input type="hidden" id="postId">
       <label for="postTitle">Title:</label>
@@ -64,18 +51,6 @@
   </div>
 
   <script>
-    const correctPassword = 'yourPassword'; // Change this to your desired password
-
-    function login() {
-      const passwordInput = document.getElementById('password').value;
-      if (passwordInput === correctPassword) {
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('postForm').style.display = 'block';
-      } else {
-        alert('Incorrect password');
-      }
-    }
-
     document.addEventListener('DOMContentLoaded', function () {
       const postForm = document.getElementById('postForm');
       const postIdField = document.getElementById('postId');
@@ -102,7 +77,7 @@
       function savePost(title, content) {
         const posts = getPosts();
         const postId = new Date().getTime().toString();
-        posts.push({ id: postId, title: title, content: content, comments: [] });
+        posts.push({ id: postId, title: title, content: content });
         localStorage.setItem('posts', JSON.stringify(posts));
         renderPosts();
       }
@@ -110,8 +85,7 @@
       function updatePost(id, title, content) {
         const posts = getPosts();
         const postIndex = posts.findIndex(post => post.id === id);
-        posts[postIndex].title = title;
-        posts[postIndex].content = content;
+        posts[postIndex] = { id, title, content };
         localStorage.setItem('posts', JSON.stringify(posts));
         renderPosts();
       }
@@ -131,14 +105,6 @@
         postContentField.value = post.content;
       }
 
-      function addComment(postId, comment) {
-        const posts = getPosts();
-        const post = posts.find(post => post.id === postId);
-        post.comments.push(comment);
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
-      }
-
       function getPosts() {
         return JSON.parse(localStorage.getItem('posts')) || [];
       }
@@ -156,29 +122,10 @@
               <button onclick="editPost('${post.id}')">Edit</button>
               <button onclick="deletePost('${post.id}')">Delete</button>
             </div>
-            <div class="comments-section">
-              <h3>Comments</h3>
-              <div id="comments-${post.id}">
-                ${post.comments.map(comment => `<div class="comment">${comment}</div>`).join('')}
-              </div>
-              <input type="text" id="comment-${post.id}" placeholder="Add a comment">
-              <button onclick="addCommentToPost('${post.id}')">Post Comment</button>
-            </div>
           `;
           postsContainer.appendChild(postElement);
         });
       }
-
-      window.addCommentToPost = function(postId) {
-        const commentInput = document.getElementById(`comment-${postId}`);
-        const comment = commentInput.value;
-        if (comment) {
-          addComment(postId, comment);
-          commentInput.value = '';
-        } else {
-          alert('Comment cannot be empty');
-        }
-      };
 
       // Initial render
       renderPosts();

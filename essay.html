@@ -1,10 +1,139 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Seungwon Kim - Essays</title>
+  <meta name="author" content="Seungwon Kim">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="stylesheet.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .post-form {
+      margin-bottom: 20px;
+    }
+    .post {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .post-title {
+      font-weight: bold;
+    }
+    .post-content {
+      margin: 10px 0;
+    }
+    .post-actions {
+      text-align: right;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>Essays</h1>
+    <form id="postForm" class="post-form">
+      <input type="hidden" id="postId">
+      <label for="postTitle">Title:</label>
+      <input type="text" id="postTitle" required>
+      <br>
+      <label for="postContent">Content:</label>
+      <textarea id="postContent" required></textarea>
+      <br>
+      <button type="submit">Save Post</button>
+    </form>
+    <div id="postsContainer"></div>
+  </div>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const postForm = document.getElementById('postForm');
+      const postIdField = document.getElementById('postId');
+      const postTitleField = document.getElementById('postTitle');
+      const postContentField = document.getElementById('postContent');
+      const postsContainer = document.getElementById('postsContainer');
+
+      postForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const postId = postIdField.value;
+        const postTitle = postTitleField.value;
+        const postContent = postContentField.value;
+
+        if (postId) {
+          updatePost(postId, postTitle, postContent);
+        } else {
+          savePost(postTitle, postContent);
+        }
+
+        postForm.reset();
+        postIdField.value = '';
+      });
+
+      function savePost(title, content) {
+        const posts = getPosts();
+        const postId = new Date().getTime().toString();
+        posts.push({ id: postId, title: title, content: content });
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function updatePost(id, title, content) {
+        const posts = getPosts();
+        const postIndex = posts.findIndex(post => post.id === id);
+        posts[postIndex] = { id, title, content };
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function deletePost(id) {
+        let posts = getPosts();
+        posts = posts.filter(post => post.id !== id);
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+      }
+
+      function editPost(id) {
+        const posts = getPosts();
+        const post = posts.find(post => post.id === id);
+        postIdField.value = post.id;
+        postTitleField.value = post.title;
+        postContentField.value = post.content;
+      }
+
+      function getPosts() {
+        return JSON.parse(localStorage.getItem('posts')) || [];
+      }
+
+      function renderPosts() {
+        const posts = getPosts();
+        postsContainer.innerHTML = '';
+        posts.forEach(post => {
+          const postElement = document.createElement('div');
+          postElement.className = 'post';
+          postElement.innerHTML = `
+            <div class="post-title">${post.title}</div>
+            <div class="post-content">${post.content}</div>
+            <div class="post-actions">
+              <button onclick="editPost('${post.id}')">Edit</button>
+              <button onclick="deletePost('${post.id}')">Delete</button>
+            </div>
+          `;
+          postsContainer.appendChild(postElement);
+        });
+      }
+
+      // Initial render
+      renderPosts();
+
+      // Expose functions to global scope
+      window.editPost = editPost;
+      window.deletePost = deletePost;
+    });
+  </script>
 </body>
 </html>

@@ -32,12 +32,27 @@
     .post-actions {
       text-align: right;
     }
+    .comments-section {
+      margin-top: 20px;
+    }
+    .comment {
+      border-top: 1px solid #ddd;
+      padding: 10px 0;
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Essays</h1>
-    <form id="postForm" class="post-form">
+    <div id="loginContainer">
+      <label for="username">Username:</label>
+      <input type="text" id="username">
+      <label for="password">Password:</label>
+      <input type="password" id="password">
+      <button onclick="login()">Submit</button>
+    </div>
+    <form id="postForm" class="post-form" style="display: none;">
       <input type="hidden" id="postId">
       <label for="postTitle">Title:</label>
       <input type="text" id="postTitle" required>
@@ -51,6 +66,21 @@
   </div>
 
   <script>
+    let token;
+
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      try {
+        const response = await axios.post('http://localhost:3000/users/login', { username, password });
+        token = response.data.token;
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('postForm').style.display = 'block';
+      } catch (error) {
+        alert('Invalid login credentials');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
       const postForm = document.getElementById('postForm');
       const postIdField = document.getElementById('postId');
@@ -58,81 +88,102 @@
       const postContentField = document.getElementById('postContent');
       const postsContainer = document.getElementById('postsContainer');
 
-      postForm.addEventListener('submit', function (e) {
+      postForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         const postId = postIdField.value;
         const postTitle = postTitleField.value;
         const postContent = postContentField.value;
 
-        if (postId) {
-          updatePost(postId, postTitle, postContent);
-        } else {
-          savePost(postTitle, postContent);
+        try {
+          if (postId) {
+            await axios.put(`http://localhost:3000/posts/${postId}`, { title: postTitle, content: postContent }, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } else {
+            await axios.post('http://localhost:3000/posts', { title: postTitle, content: postContent }, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          }
+          postForm.reset();
+          postIdField.value = '';
+          renderPosts();
+        } catch (error) {
+          console.error(error);
         }
-
-        postForm.reset();
-        postIdField.value = '';
       });
 
-      function savePost(title, content) {
-        const posts = getPosts();
-        const postId = new Date().getTime().toString();
-        posts.push({ id: postId, title: title, content: content });
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
+      async function renderPosts() {
+        try {
+          const response = await axios.get('http://localhost:3000/posts');
+          const posts = response.data;
+          postsContainer.innerHTML = '';
+          posts.forEach(post => {
+            const postElement = document.createElement('div');
+            postElement.className = 'post';
+            postElement.innerHTML = `
+              <div class="post-title">${post.title}</div>
+              <div class="post-content">${post.content}</div>
+              <div class="post-actions">
+                <button onclick="editPost('${post._id}')">Edit</button>
+                <button onclick="deletePost('${post._id}')">Delete</button>
+              </div>
+              <div class="comments-section">
+                <h3>Comments</h3>
+                <div id="comments-${post._id}">
+                  ${post.comments.map(comment => `<div class="comment">${comment.text}</div>`).join('')}
+                </div>
+                <input type="text" id="comment-${post._id}" placeholder="Add a comment">
+                <button onclick="addCommentToPost('${post._id}')">Post Comment</button>
+              </div>
+            `;
+            postsContainer.appendChild(postElement);
+          });
+        } catch (error) {
+          console.error(error);
+        }
       }
 
-      function updatePost(id, title, content) {
-        const posts = getPosts();
-        const postIndex = posts.findIndex(post => post.id === id);
-        posts[postIndex] = { id, title, content };
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
-      }
+      window.editPost = async function (postId) {
+        try {
+          const response = await axios.get(`http://localhost:3000/posts/${postId}`);
+          const post = response.data;
+          postIdField.value = post._id;
+          postTitleField.value = post.title;
+          postContentField.value = post.content;
+        } catch (error) {
+          console.error(error);
+        }
+      };
 
-      function deletePost(id) {
-        let posts = getPosts();
-        posts = posts.filter(post => post.id !== id);
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
-      }
+      window.deletePost = async function (postId) {
+        try {
+          await axios.delete(`http://localhost:3000/posts/${postId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          renderPosts();
+        } catch (error) {
+          console.error(error);
+        }
+      };
 
-      function editPost(id) {
-        const posts = getPosts();
-        const post = posts.find(post => post.id === id);
-        postIdField.value = post.id;
-        postTitleField.value = post.title;
-        postContentField.value = post.content;
-      }
-
-      function getPosts() {
-        return JSON.parse(localStorage.getItem('posts')) || [];
-      }
-
-      function renderPosts() {
-        const posts = getPosts();
-        postsContainer.innerHTML = '';
-        posts.forEach(post => {
-          const postElement = document.createElement('div');
-          postElement.className = 'post';
-          postElement.innerHTML = `
-            <div class="post-title">${post.title}</div>
-            <div class="post-content">${post.content}</div>
-            <div class="post-actions">
-              <button onclick="editPost('${post.id}')">Edit</button>
-              <button onclick="deletePost('${post.id}')">Delete</button>
-            </div>
-          `;
-          postsContainer.appendChild(postElement);
-        });
-      }
+      window.addCommentToPost = async function (postId) {
+        const commentInput = document.getElementById(`comment-${postId}`);
+        const comment = commentInput.value;
+        if (comment) {
+          try {
+            await axios.post(`http://localhost:3000/posts/${postId}/comments`, { text: comment });
+            commentInput.value = '';
+            renderPosts();
+          } catch (error) {
+            console.error(error);
+          }
+        } else {
+          alert('Comment cannot be empty');
+        }
+      };
 
       // Initial render
       renderPosts();
-
-      // Expose functions to global scope
-      window.editPost = editPost;
-      window.deletePost = deletePost;
     });
   </script>
 </body>

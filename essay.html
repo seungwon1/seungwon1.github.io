@@ -42,6 +42,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -66,6 +67,8 @@
 
   <script>
     const correctHash = '40b49036d9aca125612352dbc0ff8a62fba8e27a348a5fd5d50ff7eb8422a35e'; // Replace this with your hashed password
+    const apiUrl = 'http://localhost:5000/api/posts';
+    let isLoggedIn = false;
 
     function login() {
       const passwordInput = document.getElementById('password').value;
@@ -73,6 +76,8 @@
       if (hash === correctHash) {
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('postForm').style.display = 'block';
+        isLoggedIn = true;
+        renderPosts();
       } else {
         alert('Incorrect password');
       }
@@ -101,52 +106,74 @@
         postIdField.value = '';
       });
 
-      function savePost(title, content) {
-        const posts = getPosts();
-        const postId = new Date().getTime().toString();
-        posts.push({ id: postId, title: title, content: content, comments: [] });
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
+      async function savePost(title, content) {
+        try {
+          const response = await axios.post(apiUrl, { title, content });
+          renderPosts();
+        } catch (error) {
+          console.error('Error saving post:', error);
+        }
       }
 
-      function updatePost(id, title, content) {
-        const posts = getPosts();
-        const postIndex = posts.findIndex(post => post.id === id);
-        posts[postIndex].title = title;
-        posts[postIndex].content = content;
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
+      async function updatePost(id, title, content) {
+        try {
+          const response = await axios.put(`${apiUrl}/${id}`, { title, content });
+          renderPosts();
+        } catch (error) {
+          console.error('Error updating post:', error);
+        }
       }
 
-      function deletePost(id) {
-        let posts = getPosts();
-        posts = posts.filter(post => post.id !== id);
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
+      async function deletePost(id) {
+        if (!isLoggedIn) {
+          alert('You do not have permission to delete this post.');
+          return;
+        }
+        try {
+          const response = await axios.delete(`${apiUrl}/${id}`);
+          renderPosts();
+        } catch (error) {
+          console.error('Error deleting post:', error);
+        }
       }
 
-      function editPost(id) {
-        const posts = getPosts();
-        const post = posts.find(post => post.id === id);
-        postIdField.value = post.id;
-        postTitleField.value = post.title;
-        postContentField.value = post.content;
+      async function editPost(id) {
+        if (!isLoggedIn) {
+          alert('You do not have permission to edit this post.');
+          return;
+        }
+        try {
+          const response = await axios.get(`${apiUrl}/${id}`);
+          const post = response.data;
+          postIdField.value = post._id;
+          postTitleField.value = post.title;
+          postContentField.value = post.content;
+        } catch (error) {
+          console.error('Error fetching post:', error);
+        }
       }
 
-      function addComment(postId, comment) {
-        const posts = getPosts();
-        const post = posts.find(post => post.id === postId);
-        post.comments.push(comment);
-        localStorage.setItem('posts', JSON.stringify(posts));
-        renderPosts();
+      async function addComment(postId, comment) {
+        try {
+          const response = await axios.post(`${apiUrl}/${postId}/comments`, { comment });
+          renderPosts();
+        } catch (error) {
+          console.error('Error adding comment:', error);
+        }
       }
 
-      function getPosts() {
-        return JSON.parse(localStorage.getItem('posts')) || [];
+      async function getPosts() {
+        try {
+          const response = await axios.get(apiUrl);
+          return response.data;
+        } catch (error) {
+          console.error('Error fetching posts:', error);
+          return [];
+        }
       }
 
-      function renderPosts() {
-        const posts = getPosts();
+      async function renderPosts() {
+        const posts = await getPosts();
         postsContainer.innerHTML = '';
         posts.forEach(post => {
           const postElement = document.createElement('div');
@@ -155,16 +182,16 @@
             <div class="post-title">${post.title}</div>
             <div class="post-content">${post.content}</div>
             <div class="post-actions">
-              <button onclick="editPost('${post.id}')">Edit</button>
-              <button onclick="deletePost('${post.id}')">Delete</button>
+              ${isLoggedIn ? `<button onclick="editPost('${post._id}')">Edit</button>` : ''}
+              ${isLoggedIn ? `<button onclick="deletePost('${post._id}')">Delete</button>` : ''}
             </div>
             <div class="comments-section">
               <h3>Comments</h3>
-              <div id="comments-${post.id}">
+              <div id="comments-${post._id}">
                 ${post.comments.map(comment => `<div class="comment">${comment}</div>`).join('')}
               </div>
-              <input type="text" id="comment-${post.id}" placeholder="Add a comment">
-              <button onclick="addCommentToPost('${post.id}')">Post Comment</button>
+              <input type="text" id="comment-${post._id}" placeholder="Add a comment">
+              <button onclick="addCommentToPost('${post._id}')">Post Comment</button>
             </div>
           `;
           postsContainer.appendChild(postElement);

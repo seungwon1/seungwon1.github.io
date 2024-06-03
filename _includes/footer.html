@@ -80,6 +80,33 @@
           </div>
         {% endif %}
       </div>
+
+      <div class="footer-col footer-col-3">
+        {% if site.footer.resume and site.footer.resume.size > 0 %}
+          <h4>RESUME</h4>
+
+          <div class="social-links resume-links">
+            {% for resume in site.footer.resume %}
+              <div class="social-link">
+
+                {% assign resume_icon_path = "/assets/img/icons/" | append: resume.name | downcase | append: ".png" | absolute_url %}
+                <img
+                  src="{{ resume_icon_path }}"
+                  alt="{{ resume.name | downcase }}"
+                />
+                <a href="{{ resume.link }}">
+                  {% if resume.value and resume.value != "" and resume.value != nil %}
+                    {{ resume.value }}
+                  {% else %}
+                    {{ resume.name }}
+                  {% endif %}
+                </a>
+              </div>
+
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </footer>

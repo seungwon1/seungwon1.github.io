@@ -1,13 +1,8 @@
 # For technical reasons, this file is *NOT* reloaded automatically when you use
 # 'bundle exec jekyll serve'. If you change this file, please restart the server process.
 
-title: Bay Jekyll Theme
-description: >- # this means to ignore newlines until "baseurl:"
-  Bay is a minimal Jekyll Theme.
-baseurl: "/bay" # the subpath of the site
-url: "https://eliottvincent.github.io" # the base hostname & protocol for the site
+title: Seungwon Kim
 og_image: /assets/img/profile_sw.png
-google_analytics: "UA-121636368-3"
 
 header:
   pages:
@@ -29,6 +24,9 @@ footer:
     - type: github
       name: GitHub
       link: https://github.com/seungwon1
+    - type: resume
+      name: Resume
+      link: /assets/docs/cv_seungwonkim.pdf
 
 # Build settings
 markdown: kramdown

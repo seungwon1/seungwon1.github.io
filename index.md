@@ -21,10 +21,3 @@ I have worked on Batch Reinforcement Learning, Text Summarization, and Adapters,
 <p>
 I'm deeply passionate about machine learning and want to utilize AI to improve my work as well as the quality of life for all and positively impact society.
 </p>
-
-<p style="text-align:center">
-<a href="mailto:pennymagic156@gmail.com">Email</a> &nbsp/&nbsp
-<a href="/assets/docs/cv_seungwonkim.pdf">CV</a> &nbsp/&nbsp
-<a href="https://github.com/seungwon1"> Github </a> &nbsp/&nbsp
-<a href="https://www.linkedin.com/in/seungwon-kim/"> LinkedIn </a> 
-</p>

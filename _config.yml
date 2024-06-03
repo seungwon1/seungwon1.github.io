@@ -13,10 +13,10 @@ header:
 
 footer:
   show_powered_by: true
-  contact:
-    - type: email
-      name: Email
-      value: pennymagic156@gmail.com
+  resume:
+    - type: resume
+      name: Resume
+      link: /assets/docs/cv_seungwonkim.pdf
   follow:
     - type: linkedin
       name: LinkedIn
@@ -24,9 +24,10 @@ footer:
     - type: github
       name: GitHub
       link: https://github.com/seungwon1
-    - type: resume
-      name: Resume
-      link: /assets/docs/cv_seungwonkim.pdf
+  contact:
+    - type: email
+      name: Email
+      value: pennymagic156@gmail.com
 
 # Build settings
 markdown: kramdown

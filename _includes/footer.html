@@ -87,7 +87,7 @@
 
           <div class="social-links resume-links">
             {% for resume in site.footer.resume %}
-              <div class="social-link-resume">
+              <div class="social-link">
 
                 {% assign resume_icon_path = "/assets/img/icons/" | append: resume.name | downcase | append: ".png" | absolute_url %}
                 <img
@@ -102,6 +102,7 @@
                   {% endif %}
                 </a>
               </div>
+
             {% endfor %}
           </div>
         {% endif %}
